@@ -482,6 +482,426 @@ $('#ask-form').onsubmit = e => {
 $('#refresh').onclick = () =>
   showPage(document.querySelector('.page.active').id);
 
+
+
+// =========================================================
+// PRODUCT & CATEGORY EXPLORER
+// =========================================================
+
+let explorerMode = "product";
+
+function explorerTable(headers, rows) {
+  return table(headers, rows);
+}
+
+function renderProductExplorer(d) {
+
+  const p = d.product || {};
+  const i = d.intelligence || {};
+  const delivery = d.delivery || {};
+  const reviews = d.reviews || {};
+  const monthly = rowsOf(d.monthly_sales);
+
+  return `
+    <div class="explorer-heading">
+      <p class="eyebrow">PRODUCT DEEP DIVE</p>
+      <h2>${safe(p.product_id)}</h2>
+      <p>${safe(p.category)}</p>
+    </div>
+
+    <div class="kpi-grid">
+      ${kpi("Revenue", money(p.revenue))}
+      ${kpi("Orders", num(p.orders))}
+      ${kpi("Units Sold", num(p.units_sold))}
+      ${kpi("Customers", num(p.customers))}
+      ${kpi("Sellers", num(p.sellers))}
+      ${kpi("Avg Price", money(p.average_item_price))}
+    </div>
+
+    <div class="grid-2 explorer-grid">
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Monthly Sales</h2>
+          <span>Revenue</span>
+        </div>
+        <div class="chart tall">
+          ${bars(monthly, "revenue", 12)}
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Forecast & Trend</h2>
+          <span>ML intelligence</span>
+        </div>
+
+        <div class="intelligence-grid">
+          <div>
+            <span>Forecast Demand</span>
+            <strong>${i.forecast_demand == null ? "—" : Number(i.forecast_demand).toFixed(2)}</strong>
+          </div>
+          <div>
+            <span>Vs 3M</span>
+            <strong>${pct(i.forecast_vs_3m_pct)}</strong>
+          </div>
+          <div>
+            <span>Trend</span>
+            <strong>${safe(i.trend)}</strong>
+          </div>
+          <div>
+            <span>Trend Strength</span>
+            <strong>${safe(i.trend_strength)}</strong>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="grid-2 explorer-grid">
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Delivery Performance</h2>
+        </div>
+
+        ${explorerTable(
+          ["Metric", "Value"],
+          [
+            ["Delivered Orders", num(delivery.delivered_orders)],
+            ["Avg Delivery Days",
+              delivery.avg_delivery_days == null
+                ? "—"
+                : Number(delivery.avg_delivery_days).toFixed(1)],
+            ["On-Time Rate",
+              delivery.on_time_rate == null
+                ? "—"
+                : Number(delivery.on_time_rate).toFixed(1) + "%"]
+          ]
+        )}
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Customer & Reviews</h2>
+        </div>
+
+        ${explorerTable(
+          ["Metric", "Value"],
+          [
+            ["Customers", num(p.customers)],
+            ["Review Count", num(reviews.review_count)],
+            ["Average Review",
+              reviews.average_review_score == null
+                ? "—"
+                : Number(reviews.average_review_score).toFixed(2)]
+          ]
+        )}
+      </article>
+
+    </div>
+
+    <article class="card explorer-decision">
+
+      <div class="card-head">
+        <h2>Decision Intelligence</h2>
+        <span>${safe(i.decision_priority)}</span>
+      </div>
+
+      <div class="decision-grid">
+
+        <div class="decision-box">
+          <span>Health Score</span>
+          <strong>${i.health_score == null ? "—" : Number(i.health_score).toFixed(1)}</strong>
+          <small>${safe(i.health_status)}</small>
+        </div>
+
+        <div class="decision-box">
+          <span>Opportunity Score</span>
+          <strong>${i.opportunity_score == null ? "—" : Number(i.opportunity_score).toFixed(1)}</strong>
+        </div>
+
+        <div class="decision-box">
+          <span>Risk Score</span>
+          <strong>${i.risk_score == null ? "—" : Number(i.risk_score).toFixed(1)}</strong>
+        </div>
+
+        <div class="decision-box">
+          <span>Anomaly</span>
+          <strong>${safe(i.anomaly_type)}</strong>
+        </div>
+
+      </div>
+
+      <div class="recommendation-box">
+        <strong>Management Recommendation</strong>
+        <p>${safe(i.recommendation)}</p>
+      </div>
+
+    </article>
+  `;
+}
+
+
+function renderCategoryExplorer(d) {
+
+  const c = d.category || {};
+  const f = d.forecast || {};
+  const dec = d.decisions || {};
+  const monthly = rowsOf(d.monthly_sales);
+  const products = rowsOf(d.top_products);
+
+  return `
+    <div class="explorer-heading">
+      <p class="eyebrow">CATEGORY DEEP DIVE</p>
+      <h2>${safe(c.category)}</h2>
+      <p>Category-level business and ML intelligence.</p>
+    </div>
+
+    <div class="kpi-grid">
+      ${kpi("Revenue", money(c.revenue))}
+      ${kpi("Orders", num(c.orders))}
+      ${kpi("Units Sold", num(c.units_sold))}
+      ${kpi("Customers", num(c.customers))}
+      ${kpi("Products", num(c.products))}
+      ${kpi("Sellers", num(c.sellers))}
+    </div>
+
+    <div class="grid-2 explorer-grid">
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Category Sales Trend</h2>
+          <span>Revenue</span>
+        </div>
+        <div class="chart tall">
+          ${bars(monthly, "revenue", 12)}
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Category Forecast</h2>
+          <span>Latest ML snapshot</span>
+        </div>
+
+        <div class="intelligence-grid">
+          <div>
+            <span>Forecast Demand</span>
+            <strong>${Number(f.forecast_demand || 0).toFixed(1)}</strong>
+          </div>
+          <div>
+            <span>Forecast Products</span>
+            <strong>${num(f.forecast_products)}</strong>
+          </div>
+          <div>
+            <span>Avg Vs 3M</span>
+            <strong>${pct(f.avg_forecast_vs_3m_pct)}</strong>
+          </div>
+          <div>
+            <span>Avg Risk</span>
+            <strong>${dec.avg_risk_score == null ? "—" : Number(dec.avg_risk_score).toFixed(1)}</strong>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="grid-2 explorer-grid">
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Decision Distribution</h2>
+          <span>Products</span>
+        </div>
+
+        ${explorerTable(
+          ["Signal", "Products"],
+          [
+            ["High Opportunity", num(dec.high_opportunity_products)],
+            ["Opportunity", num(dec.opportunity_products)],
+            ["Watch", num(dec.watch_products)],
+            ["At Risk", num(dec.at_risk_products)],
+            ["Critical", num(dec.critical_products)],
+            ["High Risk", num(dec.high_risk_products)],
+            ["Low Volume Risk", num(dec.low_volume_risk_products)]
+          ]
+        )}
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Top Products</h2>
+          <span>Revenue</span>
+        </div>
+
+        ${explorerTable(
+          ["Product", "Orders", "Units", "Revenue"],
+          products.map(x => [
+            safe(x.product_id).slice(0, 12) + "...",
+            num(x.orders),
+            num(x.units_sold),
+            money(x.revenue)
+          ])
+        )}
+      </article>
+
+    </div>
+  `;
+}
+
+
+async function loadExplorerOptions() {
+
+  const select = $("#explorer-select");
+
+  if (!select) return;
+
+  select.innerHTML = '<option value="">Loading...</option>';
+
+  try {
+
+    if (explorerMode === "product") {
+
+      const data = await api("/products?limit=500");
+      const rows = rowsOf(data);
+
+      select.innerHTML =
+        '<option value="">Select a product...</option>' +
+        rows.map(x =>
+          `<option value="${safe(x.product_id)}">${safe(x.product_id)} — ${safe(x.category)}</option>`
+        ).join("");
+
+    } else {
+
+      const data = await api("/explorer/categories");
+      const rows = rowsOf(data);
+
+      select.innerHTML =
+        '<option value="">Select a category...</option>' +
+        rows.map(x =>
+          `<option value="${safe(x.category)}">${safe(x.category)}</option>`
+        ).join("");
+    }
+
+  } catch (e) {
+
+    console.error(e);
+
+    select.innerHTML =
+      '<option value="">Unable to load</option>';
+  }
+}
+
+
+async function loadExplorer() {
+
+  const select = $("#explorer-select");
+  const content = $("#explorer-content");
+
+  if (!select || !content || !select.value) {
+
+    if (content) {
+      content.innerHTML =
+        '<p class="loading">Select a product or category to explore.</p>';
+    }
+
+    return;
+  }
+
+  content.innerHTML =
+    '<p class="loading">Loading intelligence...</p>';
+
+  try {
+
+    const value = encodeURIComponent(select.value);
+
+    const endpoint =
+      explorerMode === "product"
+        ? `/explorer/product/${value}`
+        : `/explorer/category/${value}`;
+
+    const data = await api(endpoint);
+
+    content.innerHTML =
+      explorerMode === "product"
+        ? renderProductExplorer(data)
+        : renderCategoryExplorer(data);
+
+  } catch (e) {
+
+    console.error(e);
+
+    content.innerHTML =
+      '<p class="loading">Unable to load explorer data.</p>';
+  }
+}
+
+
+function setupExplorer() {
+
+  const productBtn = $("#explorer-product-btn");
+  const categoryBtn = $("#explorer-category-btn");
+  const select = $("#explorer-select");
+
+  if (!productBtn || !categoryBtn || !select) return;
+
+  productBtn.onclick = async () => {
+
+    explorerMode = "product";
+
+    productBtn.classList.add("active");
+    categoryBtn.classList.remove("active");
+
+    $("#explorer-label").textContent = "Select Product";
+
+    await loadExplorerOptions();
+  };
+
+  categoryBtn.onclick = async () => {
+
+    explorerMode = "category";
+
+    categoryBtn.classList.add("active");
+    productBtn.classList.remove("active");
+
+    $("#explorer-label").textContent = "Select Category";
+
+    await loadExplorerOptions();
+  };
+
+  select.onchange = loadExplorer;
+
+  loadExplorerOptions();
+}
+
+
+// Extend existing navigation
+const explorerOriginalShowPage = showPage;
+
+showPage = function(name) {
+
+  if (name === "explorer") {
+
+    $$(".page").forEach(x => x.classList.remove("active"));
+    $("#explorer").classList.add("active");
+
+    $$(".nav-item").forEach(x =>
+      x.classList.toggle("active", x.dataset.page === name)
+    );
+
+    $("#page-title").textContent =
+      "Product & Category Explorer";
+
+    setupExplorer();
+
+    return;
+  }
+
+  explorerOriginalShowPage(name);
+};
+
+
 loadOverview().catch(e => console.error(e));
 
 

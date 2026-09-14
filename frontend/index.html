@@ -13,6 +13,7 @@
       <button class="nav-item active" data-page="overview">Overview</button>
       <button class="nav-item" data-page="sales">Sales Analytics</button>
       <button class="nav-item" data-page="products">Product Intelligence</button>
+      <button class="nav-item" data-page="explorer">Product & Category Explorer</button>
       <button class="nav-item" data-page="risk">Risk & Anomalies</button>
       <button class="nav-item" data-page="analyst">AI Business Analyst</button>
     </nav>
@@ -47,6 +48,38 @@
       <div class="section-intro"><div><h2>Product Intelligence</h2><p>Forecast, growth, opportunities and product health.</p></div></div>
       <div class="tabs"><button class="tab active" data-product-view="forecast">Forecast</button><button class="tab" data-product-view="opportunity">Opportunities</button><button class="tab" data-product-view="risk">Risks</button></div>
       <article class="card"><div id="product-table"></div></article>
+    </section>
+
+
+    <section id="explorer" class="page">
+
+      <div class="section-intro">
+        <div>
+          <h2>Product & Category Explorer</h2>
+          <p>Deep-dive into sales, customers, delivery and ML intelligence.</p>
+        </div>
+      </div>
+
+      <div class="explorer-switch">
+        <button id="explorer-product-btn" class="explorer-mode active">
+          Product
+        </button>
+        <button id="explorer-category-btn" class="explorer-mode">
+          Category
+        </button>
+      </div>
+
+      <div class="explorer-selector card">
+        <label id="explorer-label">Select Product</label>
+        <select id="explorer-select">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+
+      <div id="explorer-content">
+        <p class="loading">Select a product or category to explore.</p>
+      </div>
+
     </section>
 
     <section id="risk" class="page">

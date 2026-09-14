@@ -561,6 +561,336 @@ def recommendations(
     }
 
 
+
+# ---------------------------------------------------------
+# PRODUCT & CATEGORY EXPLORER
+# ---------------------------------------------------------
+
+@app.get("/api/v1/explorer/product/{product_id}")
+def explorer_product(product_id: str):
+
+    product = fetch_one("""
+        SELECT
+            p.product_id,
+            COALESCE(
+                ct.product_category_name_english,
+                p.product_category_name,
+                'unknown'
+            ) AS category,
+            COUNT(DISTINCT o.order_id)
+                FILTER (WHERE o.order_status = 'delivered') AS orders,
+            COUNT(*) FILTER (WHERE o.order_status = 'delivered') AS units_sold,
+            COUNT(DISTINCT o.customer_id)
+                FILTER (WHERE o.order_status = 'delivered') AS customers,
+            COUNT(DISTINCT oi.seller_id)
+                FILTER (WHERE o.order_status = 'delivered') AS sellers,
+            COALESCE(
+                SUM(oi.price)
+                FILTER (WHERE o.order_status = 'delivered'), 0
+            ) AS revenue,
+            COALESCE(
+                AVG(oi.price)
+                FILTER (WHERE o.order_status = 'delivered'), 0
+            ) AS average_item_price
+        FROM olist_bi.products p
+        LEFT JOIN olist_bi.category_translation ct
+            ON ct.product_category_name = p.product_category_name
+        LEFT JOIN olist_bi.order_items oi
+            ON oi.product_id = p.product_id
+        LEFT JOIN olist_bi.orders o
+            ON o.order_id = oi.order_id
+        WHERE p.product_id = :product_id
+        GROUP BY p.product_id, category
+    """, {"product_id": product_id})
+
+    if not product:
+        raise HTTPException(404, "Product not found")
+
+    monthly = fetch_all("""
+        SELECT
+            DATE_TRUNC(
+                'month', o.order_purchase_timestamp
+            )::date AS month,
+            COUNT(DISTINCT o.order_id) AS orders,
+            COUNT(*) AS units_sold,
+            COALESCE(SUM(oi.price), 0) AS revenue
+        FROM olist_bi.order_items oi
+        JOIN olist_bi.orders o
+            ON o.order_id = oi.order_id
+        WHERE
+            oi.product_id = :product_id
+            AND o.order_status = 'delivered'
+        GROUP BY 1
+        ORDER BY 1
+    """, {"product_id": product_id})
+
+    delivery = fetch_one("""
+        SELECT
+            COUNT(DISTINCT o.order_id) AS delivered_orders,
+            AVG(
+                EXTRACT(
+                    EPOCH FROM (
+                        o.order_delivered_customer_date
+                        - o.order_purchase_timestamp
+                    )
+                ) / 86400.0
+            ) AS avg_delivery_days,
+            AVG(
+                CASE
+                    WHEN
+                        o.order_delivered_customer_date IS NOT NULL
+                        AND o.order_estimated_delivery_date IS NOT NULL
+                        AND o.order_delivered_customer_date
+                            <= o.order_estimated_delivery_date
+                    THEN 1.0
+                    ELSE 0.0
+                END
+            ) * 100 AS on_time_rate
+        FROM olist_bi.order_items oi
+        JOIN olist_bi.orders o
+            ON o.order_id = oi.order_id
+        WHERE
+            oi.product_id = :product_id
+            AND o.order_status = 'delivered'
+    """, {"product_id": product_id})
+
+    reviews = fetch_one("""
+        SELECT
+            COUNT(*) AS review_count,
+            AVG(r.review_score) AS average_review_score
+        FROM olist_bi.reviews r
+        JOIN olist_bi.order_items oi
+            ON oi.order_id = r.order_id
+        WHERE oi.product_id = :product_id
+    """, {"product_id": product_id})
+
+    intelligence = fetch_one("""
+        SELECT
+            i.product_id,
+            i.forecast_month,
+            i.forecast_demand,
+            i.forecast_growth_pct,
+            i.forecast_vs_3m_pct,
+            i.analysis_month,
+            i.trend,
+            i.trend_strength,
+            i.anomaly_flag,
+            i.anomaly_type,
+            i.anomaly_severity,
+            i.actual_demand,
+            i.expected_demand,
+            i.health_score,
+            i.health_status,
+            i.opportunity_score,
+            i.risk_score,
+            i.decision_priority,
+            i.volume_tier,
+            i.business_relevance,
+            i.recommendation
+        FROM olist_bi.v_product_intelligence i
+        WHERE i.product_id = :product_id
+        LIMIT 1
+    """, {"product_id": product_id})
+
+    return {
+        "product": product,
+        "monthly_sales": monthly,
+        "delivery": delivery or {},
+        "reviews": reviews or {},
+        "intelligence": intelligence or {}
+    }
+
+
+@app.get("/api/v1/explorer/category/{category}")
+def explorer_category(category: str):
+
+    category_data = fetch_one("""
+        SELECT
+            COALESCE(
+                ct.product_category_name_english,
+                p.product_category_name,
+                'unknown'
+            ) AS category,
+            COUNT(DISTINCT p.product_id) AS products,
+            COUNT(DISTINCT o.order_id)
+                FILTER (WHERE o.order_status = 'delivered') AS orders,
+            COUNT(*) FILTER (WHERE o.order_status = 'delivered')
+                AS units_sold,
+            COUNT(DISTINCT o.customer_id)
+                FILTER (WHERE o.order_status = 'delivered') AS customers,
+            COUNT(DISTINCT oi.seller_id)
+                FILTER (WHERE o.order_status = 'delivered') AS sellers,
+            COALESCE(
+                SUM(oi.price)
+                FILTER (WHERE o.order_status = 'delivered'), 0
+            ) AS revenue,
+            COALESCE(
+                AVG(oi.price)
+                FILTER (WHERE o.order_status = 'delivered'), 0
+            ) AS average_item_price
+        FROM olist_bi.products p
+        LEFT JOIN olist_bi.category_translation ct
+            ON ct.product_category_name = p.product_category_name
+        LEFT JOIN olist_bi.order_items oi
+            ON oi.product_id = p.product_id
+        LEFT JOIN olist_bi.orders o
+            ON o.order_id = oi.order_id
+        WHERE COALESCE(
+            ct.product_category_name_english,
+            p.product_category_name,
+            'unknown'
+        ) = :category
+        GROUP BY 1
+    """, {"category": category})
+
+    if not category_data:
+        raise HTTPException(404, "Category not found")
+
+    monthly = fetch_all("""
+        SELECT
+            DATE_TRUNC(
+                'month', o.order_purchase_timestamp
+            )::date AS month,
+            COUNT(DISTINCT o.order_id) AS orders,
+            COUNT(*) AS units_sold,
+            COALESCE(SUM(oi.price), 0) AS revenue
+        FROM olist_bi.order_items oi
+        JOIN olist_bi.orders o
+            ON o.order_id = oi.order_id
+        JOIN olist_bi.products p
+            ON p.product_id = oi.product_id
+        LEFT JOIN olist_bi.category_translation ct
+            ON ct.product_category_name = p.product_category_name
+        WHERE
+            o.order_status = 'delivered'
+            AND COALESCE(
+                ct.product_category_name_english,
+                p.product_category_name,
+                'unknown'
+            ) = :category
+        GROUP BY 1
+        ORDER BY 1
+    """, {"category": category})
+
+    top_products = fetch_all("""
+        SELECT
+            oi.product_id,
+            COUNT(DISTINCT o.order_id) AS orders,
+            COUNT(*) AS units_sold,
+            COALESCE(SUM(oi.price), 0) AS revenue
+        FROM olist_bi.order_items oi
+        JOIN olist_bi.orders o
+            ON o.order_id = oi.order_id
+        JOIN olist_bi.products p
+            ON p.product_id = oi.product_id
+        LEFT JOIN olist_bi.category_translation ct
+            ON ct.product_category_name = p.product_category_name
+        WHERE
+            o.order_status = 'delivered'
+            AND COALESCE(
+                ct.product_category_name_english,
+                p.product_category_name,
+                'unknown'
+            ) = :category
+        GROUP BY oi.product_id
+        ORDER BY revenue DESC
+        LIMIT 15
+    """, {"category": category})
+
+    forecast = fetch_one("""
+        SELECT
+            COUNT(*) AS forecast_products,
+            COALESCE(SUM(f.forecast_demand), 0)
+                AS forecast_demand,
+            AVG(f.forecast_vs_3m_pct)
+                FILTER (WHERE f.forecast_vs_3m_pct IS NOT NULL)
+                AS avg_forecast_vs_3m_pct
+        FROM olist_bi.product_forecasts f
+        JOIN olist_bi.products p
+            ON p.product_id = f.product_id
+        LEFT JOIN olist_bi.category_translation ct
+            ON ct.product_category_name = p.product_category_name
+        WHERE
+            COALESCE(
+                ct.product_category_name_english,
+                p.product_category_name,
+                'unknown'
+            ) = :category
+            AND f.forecast_month = (
+                SELECT MAX(f2.forecast_month)
+                FROM olist_bi.product_forecasts f2
+            )
+    """, {"category": category})
+
+    decisions = fetch_one("""
+        SELECT
+            COUNT(*) AS intelligence_products,
+            COUNT(*) FILTER (
+                WHERE d.decision_priority = 'high_opportunity'
+            ) AS high_opportunity_products,
+            COUNT(*) FILTER (
+                WHERE d.decision_priority = 'opportunity'
+            ) AS opportunity_products,
+            COUNT(*) FILTER (
+                WHERE d.decision_priority = 'high_risk'
+            ) AS high_risk_products,
+            COUNT(*) FILTER (
+                WHERE d.decision_priority = 'low_volume_risk'
+            ) AS low_volume_risk_products,
+            COUNT(*) FILTER (
+                WHERE d.decision_priority = 'watch'
+            ) AS watch_products,
+            COUNT(*) FILTER (
+                WHERE d.health_status = 'at_risk'
+            ) AS at_risk_products,
+            COUNT(*) FILTER (
+                WHERE d.health_status = 'critical'
+            ) AS critical_products,
+            AVG(d.opportunity_score) AS avg_opportunity_score,
+            AVG(d.risk_score) AS avg_risk_score
+        FROM olist_bi.product_decision_scores d
+        JOIN olist_bi.products p
+            ON p.product_id = d.product_id
+        LEFT JOIN olist_bi.category_translation ct
+            ON ct.product_category_name = p.product_category_name
+        WHERE COALESCE(
+            ct.product_category_name_english,
+            p.product_category_name,
+            'unknown'
+        ) = :category
+    """, {"category": category})
+
+    return {
+        "category": category_data,
+        "monthly_sales": monthly,
+        "top_products": top_products,
+        "forecast": forecast or {},
+        "decisions": decisions or {}
+    }
+
+
+@app.get("/api/v1/explorer/categories")
+def explorer_categories():
+
+    rows = fetch_all("""
+        SELECT DISTINCT
+            COALESCE(
+                ct.product_category_name_english,
+                p.product_category_name,
+                'unknown'
+            ) AS category
+        FROM olist_bi.products p
+        LEFT JOIN olist_bi.category_translation ct
+            ON ct.product_category_name = p.product_category_name
+        ORDER BY 1
+    """)
+
+    return {
+        "items": rows,
+        "count": len(rows)
+    }
+
+
 # ---------------------------------------------------------
 # SELLERS
 # ---------------------------------------------------------
