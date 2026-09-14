@@ -1,4 +1,4 @@
-const API = 'http://localhost:8000/api/v1';
+ï»¿const API = 'http://localhost:8000/api/v1';
 
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
@@ -14,14 +14,14 @@ const num = n =>
   new Intl.NumberFormat('en-US').format(Number(n ?? 0));
 
 const pct = n => {
-  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return 'â€”';
   const v = Number(n);
   return `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 };
 
 const safe = value =>
   value === null || value === undefined || value === ''
-    ? '—'
+    ? 'â€”'
     : String(value);
 
 async function api(path) {
@@ -60,7 +60,7 @@ function table(headers, rows) {
       </thead>
       <tbody>
         ${rows.map(r =>
-          `<tr>${r.map(x => `<td>${x ?? '—'}</td>`).join('')}</tr>`
+          `<tr>${r.map(x => `<td>${x ?? 'â€”'}</td>`).join('')}</tr>`
         ).join('')}
       </tbody>
     </table>
@@ -82,7 +82,7 @@ function bars(rows, key, max = 12) {
         class="bar"
         style="height:${Math.max(3, value / m * 92)}%"
       >
-        <label>${label} · ${money(value)}</label>
+        <label>${label} Â· ${money(value)}</label>
       </div>
     `;
   }).join('');
@@ -187,7 +187,7 @@ async function loadOverview() {
     $('#top-products').innerHTML = table(
       ['Product', 'Category', 'Revenue'],
       tops.slice(0, 8).map(x => [
-        safe(x.product_id).slice(0, 10) + '…',
+        safe(x.product_id).slice(0, 10) + '...',
         safe(x.category),
         money(x.revenue)
       ])
@@ -230,7 +230,7 @@ async function loadSales() {
       p.slice(0, 10).map(x => [
         safe(x.payment_type),
         num(x.payment_count),
-        money(x.payment_value)
+        money(x.total_payment_value)
       ])
     );
 
@@ -260,7 +260,7 @@ async function loadProducts() {
       $('#product-table').innerHTML = table(
         ['Product', 'Category', 'Forecast', 'Vs 3M', 'Month'],
         rows.map(x => [
-          safe(x.product_id).slice(0, 12) + '…',
+          safe(x.product_id).slice(0, 12) + '...',
           safe(x.category),
           Number(x.forecast_demand ?? 0).toFixed(2),
           pct(x.forecast_vs_3m_pct),
@@ -278,7 +278,7 @@ async function loadProducts() {
           'Priority'
         ],
         rows.map(x => [
-          safe(x.product_id).slice(0, 12) + '…',
+          safe(x.product_id).slice(0, 12) + '...',
           safe(x.category),
           `<span class="badge ${
             x.health_status === 'healthy'
@@ -327,12 +327,12 @@ async function loadRisk() {
         'Expected'
       ],
       rows.map(x => [
-        safe(x.product_id).slice(0, 12) + '…',
+        safe(x.product_id).slice(0, 12) + '...',
         safe(x.category),
         safe(x.anomaly_type),
         Number(x.anomaly_severity ?? 0).toFixed(1),
-        x.actual_demand == null ? '—' : num(x.actual_demand),
-        x.expected_demand == null ? '—' : num(x.expected_demand)
+        x.actual_demand == null ? 'â€”' : num(x.actual_demand),
+        x.expected_demand == null ? 'â€”' : num(x.expected_demand)
       ])
     );
 
@@ -483,3 +483,7 @@ $('#refresh').onclick = () =>
   showPage(document.querySelector('.page.active').id);
 
 loadOverview().catch(e => console.error(e));
+
+
+
+

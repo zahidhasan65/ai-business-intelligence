@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -71,7 +71,7 @@ ML_COLUMNS = {
 }
 
 def resolve_file(candidates):
-    roots = [DATA_DIR, Path("/mnt/data"), Path.cwd()]
+    roots = [DATA_DIR, OUTPUT_DIR, Path("/mnt/data"), Path.cwd()]
     for root in roots:
         for name in candidates:
             path = root / name
@@ -369,3 +369,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
