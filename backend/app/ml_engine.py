@@ -48,23 +48,17 @@ ML_INTENTS = {
 
     "trend": """
         SELECT
-            t.product_id,
-            COALESCE(
-                ct.product_category_name_english,
-                p.product_category_name,
-                'unknown'
-            ) AS category,
-            t.analysis_month,
-            t.trend,
-            t.trend_strength,
-            t.forecast_vs_3m_pct,
-            t.forecast_delta_vs_3m
-        FROM olist_bi.product_trends t
-        LEFT JOIN olist_bi.products p
-            ON p.product_id = t.product_id
-        LEFT JOIN olist_bi.category_translation ct
-            ON ct.product_category_name = p.product_category_name
-        ORDER BY ABS(t.forecast_vs_3m_pct) DESC NULLS LAST
+            i.product_id,
+            i.category,
+            i.analysis_month,
+            i.trend,
+            i.trend_strength,
+            i.forecast_demand,
+            i.forecast_growth_pct,
+            i.forecast_vs_3m_pct
+        FROM olist_bi.v_product_intelligence i
+        WHERE i.trend IS NOT NULL
+        ORDER BY ABS(i.forecast_vs_3m_pct) DESC NULLS LAST
         LIMIT :limit
     """,
 
