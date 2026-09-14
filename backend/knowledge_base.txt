@@ -1,0 +1,48 @@
+# Olist AI Business Intelligence - Knowledge Base
+
+## Project Overview
+This system analyzes Olist Brazilian e-commerce data to support business decisions using SQL analytics, demand forecasting, product trend analysis, anomaly detection, opportunity scoring, and risk scoring.
+
+## Dataset
+The project uses the Olist Brazilian E-Commerce Public Dataset.
+
+## Business Metrics
+Revenue for ML/business analysis is based on delivered orders and product item price.
+AOV means average order value.
+Demand means the number of product units sold in a period.
+
+## Demand Forecasting
+The forecasting system predicts future product demand using historical product-level demand features.
+The final forecast currently targets September 2018.
+Forecast quality was evaluated using leakage-free time-based validation.
+
+## Forecast Interpretation
+forecast_demand = predicted product demand.
+forecast_vs_3m_pct = percentage difference between forecast demand and recent 3-month demand.
+Positive values indicate expected growth relative to the recent 3-month baseline.
+Negative values indicate expected decline.
+
+## Product Decisions
+Products can receive business decision priorities such as:
+high_opportunity, opportunity, watch, normal, low_volume_risk, and high_risk.
+
+## Health Status
+healthy indicates relatively strong product health.
+watch indicates a product that should be monitored.
+at_risk indicates elevated business risk.
+critical indicates severe risk.
+
+## Opportunity Score
+Opportunity score represents the model's estimated business opportunity based on the project's product intelligence signals.
+
+## Risk Score
+Risk score represents the estimated business risk based on product intelligence signals.
+
+## Anomaly Detection
+Anomalies identify unusual differences between observed and expected product demand.
+Anomaly severity indicates the strength of the detected deviation.
+
+## Limitations
+Forecasts are model estimates, not guaranteed future sales.
+Very low-volume products can produce large percentage changes from small baselines.
+The Olist dataset does not provide an authoritative company return policy, shipping policy, or payment policy.

@@ -1,0 +1,19 @@
+Add this service under `services:` in your existing docker-compose.yml:
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: olist_bi_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+Then run:
+docker compose build frontend
+docker compose up -d frontend
+
+Open:
+http://localhost:3000

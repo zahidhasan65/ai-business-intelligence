@@ -1,0 +1,69 @@
+﻿services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: olist_bi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-olist_bi}
+      POSTGRES_USER: ${POSTGRES_USER:-olist}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-olist_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./data/olist:/data/olist:ro
+      - ./ml/outputs:/data/ml_outputs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-olist} -d ${POSTGRES_DB:-olist_bi}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  etl:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: olist_bi_etl
+    restart: "no"
+    environment:
+      POSTGRES_URL: postgresql+psycopg2://${POSTGRES_USER:-olist}:${POSTGRES_PASSWORD:-olist_dev_password}@postgres:5432/${POSTGRES_DB:-olist_bi}
+      OLIST_DATA_DIR: /data/olist
+      OLIST_OUTPUT_DIR: /data/ml_outputs
+    volumes:
+      - ./data/olist:/data/olist:ro
+      - ./ml/outputs:/data/ml_outputs:ro
+      - ./database:/app/database:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "etl_loader.py"]
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: olist_bi_api
+    restart: unless-stopped
+    environment:
+      POSTGRES_URL: postgresql+psycopg2://${POSTGRES_USER:-olist}:${POSTGRES_PASSWORD:-olist_dev_password}@postgres:5432/${POSTGRES_DB:-olist_bi}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: olist_bi_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

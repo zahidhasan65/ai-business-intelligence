@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Olist AI Business Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">OI</div><div><b>Olist AI BI</b><span>Decision Intelligence</span></div></div>
+    <nav>
+      <button class="nav-item active" data-page="overview">Overview</button>
+      <button class="nav-item" data-page="sales">Sales Analytics</button>
+      <button class="nav-item" data-page="products">Product Intelligence</button>
+      <button class="nav-item" data-page="risk">Risk & Anomalies</button>
+      <button class="nav-item" data-page="analyst">AI Business Analyst</button>
+    </nav>
+    <div class="side-note"><span class="dot"></span> Live PostgreSQL + ML</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><p class="eyebrow">BUSINESS INTELLIGENCE</p><h1 id="page-title">Executive Overview</h1></div>
+      <button id="refresh" class="refresh">↻ Refresh</button>
+    </header>
+
+    <section id="overview" class="page active">
+      <div id="kpis" class="kpi-grid"></div>
+      <div class="grid-2">
+        <article class="card"><div class="card-head"><h2>Monthly Revenue</h2><span>Delivered orders</span></div><div id="revenue-chart" class="chart"></div></article>
+        <article class="card"><div class="card-head"><h2>Decision Health</h2><span>Product portfolio</span></div><div id="health-chart" class="donut-wrap"></div></article>
+      </div>
+      <div class="grid-2">
+        <article class="card"><div class="card-head"><h2>Top Categories</h2><span>Revenue</span></div><div id="categories"></div></article>
+        <article class="card"><div class="card-head"><h2>Top Products</h2><span>Revenue</span></div><div id="top-products"></div></article>
+      </div>
+    </section>
+
+    <section id="sales" class="page">
+      <div class="section-intro"><div><h2>Sales Analytics</h2><p>Historical revenue and category performance.</p></div></div>
+      <article class="card"><div class="card-head"><h2>Monthly Sales Trend</h2></div><div id="sales-chart" class="chart tall"></div></article>
+      <div class="grid-2"><article class="card"><div class="card-head"><h2>Category Performance</h2></div><div id="sales-categories"></div></article><article class="card"><div class="card-head"><h2>Payment Mix</h2></div><div id="payments"></div></article></div>
+    </section>
+
+    <section id="products" class="page">
+      <div class="section-intro"><div><h2>Product Intelligence</h2><p>Forecast, growth, opportunities and product health.</p></div></div>
+      <div class="tabs"><button class="tab active" data-product-view="forecast">Forecast</button><button class="tab" data-product-view="opportunity">Opportunities</button><button class="tab" data-product-view="risk">Risks</button></div>
+      <article class="card"><div id="product-table"></div></article>
+    </section>
+
+    <section id="risk" class="page">
+      <div class="section-intro"><div><h2>Risk & Anomalies</h2><p>Signals that deserve management attention.</p></div></div>
+      <div class="kpi-grid mini" id="risk-kpis"></div>
+      <article class="card"><div class="card-head"><h2>Detected Anomalies</h2></div><div id="anomaly-table"></div></article>
+    </section>
+
+    <section id="analyst" class="page">
+      <div class="analyst-shell">
+        <div class="analyst-header"><div><p class="eyebrow">DETERMINISTIC AI LAYER</p><h2>AI Business Analyst</h2><p>Ask questions about revenue, forecasts, risks, opportunities and business definitions.</p></div></div>
+        <div class="suggestions">
+          <button>What was the total revenue?</button><button>What products have the highest forecast demand?</button><button>Why did sales decline and what should we do?</button><button>What does forecast_vs_3m_pct mean?</button>
+        </div>
+        <div id="chat" class="chat"></div>
+        <form id="ask-form" class="ask"><input id="question" placeholder="Ask a business question..." autocomplete="off"><button>Ask</button></form>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
